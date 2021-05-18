@@ -186,10 +186,10 @@ class LiveFeed:
         for i, s in enumerate(sources):
             # Start the thread to read frames from the video stream
             print('%g/%g: %s... ' % (i + 1, n, s), end='')
-            if s == '0':
-                cap = cv2.VideoCapture(0)
-            else:
-                cap = cv2.VideoCapture(s, cv2.CAP_GSTREAMER)
+            try:
+                cap = cv2.VideoCapture(int(s))
+            except:
+                cap = cv2.VideoCapture(s)
             assert cap.isOpened(), 'Failed to open %s' % s
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))

@@ -128,7 +128,11 @@ class Detect(object):
             return 0 
 
     def get_sources(self):
-        self.webcam = self.source == '0' or self.source.startswith('rtsp') or self.source.startswith('http') or self.source.endswith('.txt') or self.source.startswith('v4l2src') or self.source.startswith('basler')
+        try:
+            int(self.source)
+            self.webcam = True
+        except:
+            self.webcam = self.source.startswith('rtsp') or self.source.startswith('http') or self.source.endswith('.txt') or self.source.startswith('v4l2src') or self.source.startswith('basler')
         if self.webcam:
             self.save_img = False
             torch.backends.cudnn.benchmark = True  
