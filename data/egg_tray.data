@@ -1,0 +1,8 @@
+classes=1
+##train=../coco/trainvalno5k.txt
+##valid=../coco/5k.txt
+train=/workspace/home/cumulative_count_test/data/egg_tray/train.txt
+valid=/workspace/home/cumulative_count_test/data/egg_tray/val.txt
+names=data/egg_tray.names
+backup=backup/
+eval=egg_tray
