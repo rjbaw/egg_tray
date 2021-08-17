@@ -203,7 +203,7 @@ class Detect(object):
                         label = '%s %.2f' % (self.classes[int(cls)], conf)
                         plot_one_box(xyxy, self.im0, label=label, color=colors[int(cls)])
                     x, y, xmax, ymax = xyxy
-                    g_rects.append([int(x), int(y), int(xmax), int(ymax), conf, int(cls)])
+                    g_rects.append([int(x), int(y), int(xmax), int(ymax), float(conf), int(cls)])
         return np.array(g_rects)
 
     def put_status_bar(self, t0):
