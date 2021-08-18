@@ -1,5 +1,14 @@
 # Egg tray feature detector
 ## Directory Setup
+### Git
+#### Fresh install
+```
+git clone https://github.com/ezvk7740/egg_tray/
+```
+#### Update Install
+```
+git pull
+```
 ### WSL
 ```
 sudo apt-get install git wget
@@ -60,9 +69,8 @@ Changing weights path
 
 e.g.
 ```
-python get_coordinate.py --weights weights/hello.pt
+python get_coordinate.py --weights weights/${weights_name}.pt
 ```
 ### GPU/CPU
-use gpu `python get_coordinate.py --device ''`
+use gpu `python get_coordinate.py --device ${gpu_id}`
 use cpu`python get_coordinate.py --device cpu`
-
