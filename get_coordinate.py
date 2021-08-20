@@ -425,7 +425,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp-1cls.cfg', help='cfg file path')
     parser.add_argument('--data', type=str, default='data/egg_tray.data', help='data file path')
-    parser.add_argument('--weights', type=str, default='weights/bestegg_tray_precision3.pt', help='path to weights file')
+    parser.add_argument('--weights', type=str, default='weights/egg_tray.pt', help='path to weights file')
     parser.add_argument('--source', type=str, default='0', help='source')  # input file/folder, 0 for webcam
     parser.add_argument('--camera-params', type=str, default='camera_data.npy', help='intrinsic camera parameters path')
     parser.add_argument('--output', type=str, default='output', help='output folder')  # output folder
