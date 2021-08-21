@@ -38,13 +38,12 @@ class Detect(object):
         self.vid_writer = None
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.fps = 0
-        self.load_camera_parameters(opt.camera_params)
-        if self.use_socket:
-            self.socket_connection(opt.test_socket)
-
         self.robot = 'KUKA'
         self.cartesian_xcoor = 0.017 
         self.cartesian_ycoor = 0.0096 
+        self.load_camera_parameters(opt.camera_params)
+        if self.use_socket:
+            self.socket_connection(opt.test_socket)
 
     def load_camera_parameters(self, cam_params_path):
         if self.debug:
