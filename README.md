@@ -1,23 +1,23 @@
 # Egg tray feature detector
-## Directory Setup
-### Git
-#### Fresh install
-```
-git clone https://github.com/ezvk7740/egg_tray/
-```
-#### Update Install
-```
-git pull
-```
-### WSL
+## Setup
+### Fresh install
 ```
 sudo apt-get install git wget
 git clone https://github.com/ezvk7740/egg_tray.git
-cd egg_tray
 mkdir weights
-cd weights
-wget https://www.dropbox.com/s/5bg9yis4kqtouud/egg_tray.pt
-cd ..
+```
+### Update Install
+```
+git pull
+```
+### Weights Download
+Small box model  
+`https://www.dropbox.com/s/5fth1oik27heq7p/bestegg_tray_precision3.pt?dl=0`  
+Big box model  
+`https://www.dropbox.com/s/4g2optubuayjodq/bestegg_tray_color.pt?dl=0`  
+```
+cd egg_tray/weights
+wget ${DOWNLOAD_LINK} -O egg_tray.pt
 ```
 ## Conda Environment Setup
 ```

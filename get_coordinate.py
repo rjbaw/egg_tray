@@ -39,8 +39,15 @@ class Detect(object):
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.fps = 0
         self.robot = 'KUKA'
-        self.cartesian_xcoor = 0.017 
-        self.cartesian_ycoor = 0.0096 
+
+        #new model
+        self.cartesian_xcoor = 0.0115 
+        self.cartesian_ycoor = 0.075 
+
+        #old model
+        #self.cartesian_xcoor = 0.017 
+        #self.cartesian_ycoor = 0.0096 
+
         self.load_camera_parameters(opt.camera_params)
         if self.use_socket:
             self.socket_connection(opt.test_socket)
@@ -107,7 +114,7 @@ class Detect(object):
             robot_data = self.read_xml(robot_data)
         else:
             assert True, 'ROBOT TYPE NOT SUPPORTED'
-        if debug:
+        if self.debug:
             print('STATE: ', robot_data)
 
     def read_json(self, robot_data):
@@ -401,7 +408,7 @@ class Detect(object):
             if self.save_img:
                 if dataset.mode != 'images':
                     self.put_status_bar()
-                self.save_to_out(vid_cap)
+                self.save_to_out(dataset.mode, vid_cap)
             if len(g_rects) != 0:
                 max_rect = self.get_xyedge_pos(g_rects)
                 rvec, tvec = self.transform_pnp(max_rect)
@@ -424,7 +431,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp-1cls.cfg', help='cfg file path')
     parser.add_argument('--data', type=str, default='data/egg_tray.data', help='data file path')
-    parser.add_argument('--weights', type=str, default='weights/egg_tray.pt', help='path to weights file')
+    parser.add_argument('--weights', type=str, default='weights/bestegg_tray_precision3.pt', help='path to weights file')
     parser.add_argument('--source', type=str, default='0', help='source')  # input file/folder, 0 for webcam
     parser.add_argument('--camera-params', type=str, default='camera_data.npy', help='intrinsic camera parameters path')
     parser.add_argument('--output', type=str, default='output', help='output folder')  # output folder
