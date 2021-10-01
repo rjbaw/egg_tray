@@ -38,6 +38,7 @@ class Detect(object):
         self.vid_writer = None
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.fps = 0
+        self.session = 0
         self.robot = 'KUKA'
 
         #new model
@@ -71,7 +72,8 @@ class Detect(object):
             IP = '127.0.0.1'
         else:
             PORT = 54600
-            IP = '192.168.1.10'
+            #IP = '192.168.1.10'
+            IP = '172.31.1.147'
         print('ADDRESS: TCP://{}:{}'.format(IP, PORT))
         print("CONNECTING......")
         while True:
@@ -104,6 +106,7 @@ class Detect(object):
             return self.read_robot_data(robot_data)
 
     def read_robot_data(self, robot_data):
+        self.session = 0
         if self.robot == 'ABB':
             if self.debug:
                 print('ABB ROBOT')
@@ -354,16 +357,19 @@ class Detect(object):
             return self.transform_robot_base(np.squeeze(rect))
 #        coor = np.asarray([-rect[1], -rect[0], -rect[2]])
 #        coor = np.asarray([rect[2], -rect[0], -rect[1]])
-        coor = np.asarray([0, -rect[0], rect[1]])
+        coor = np.asarray([0, -rect[0], -rect[1]])
         if self.debug:
             print('TRANSLATION VECTOR RELATIVE TO ROBOT: \n', coor)
 #        refp = [-0.139, 0.02046, -0.5125]
         refp = [0, 0, 0]
-        coor = np.asarray([refp[0] * np.sign(coor[0]) + 1.0 * np.sign(coor[0]) * (abs(coor[0]) - refp[0]),
-                           refp[1] * np.sign(coor[1]) + 1.0 * np.sign(coor[1]) * (abs(coor[1]) - refp[1]),
-                           refp[2] * np.sign(coor[2]) + 1.0 * np.sign(coor[2]) * (abs(coor[2]) - refp[2])])
+        damper = 0.9**self.session
+        coor = np.asarray([refp[0] * np.sign(coor[0]) + damper * np.sign(coor[0]) * (abs(coor[0]) - refp[0]),
+                           refp[1] * np.sign(coor[1]) + damper * np.sign(coor[1]) * (abs(coor[1]) - refp[1]),
+                           refp[2] * np.sign(coor[2]) + damper * np.sign(coor[2]) * (abs(coor[2]) - refp[2])])
         if self.debug:
             print('SCALED TRANSLATION VECTOR RELATIVE TO ROBOT: \n', coor)
+        #if (abs(coor[1]) + abs(coor[2])) < 0.003:
+        #    coor = np.zeros(3)
         return coor
 
     def send2robot(self, a_tvec, euler_angles):
@@ -414,8 +420,12 @@ class Detect(object):
                 rvec, tvec = self.transform_pnp(max_rect)
                 euler_angles = self.transform_euler_angles(rvec)
                 a_tvec = self.transform_robot_base(tvec)
+                if not ( (-0.1 < a_tvec[1] < 0.1) and (-0.1 < a_tvec[2] < 0.1) ):
+                    continue
                 if self.use_socket:
                     self.send2robot(a_tvec, euler_angles)
+                    #if self.conf_thres < 0.7:
+                    #    self.conf_thres += 0.1
                     self.socket_recieve()
             if self.fps == 0:
                 self.fps = 1/(time.time() - t)
