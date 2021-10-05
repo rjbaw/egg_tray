@@ -30,15 +30,6 @@ conda install pytorch==1.4.0 torchvision==0.5.0 scipy matplotlib tqdm numpy cuda
 ```
 python get_coordinate.py
 ```
-### Fixing Bugs (optional)
-add this line here to the file at C:\Users\{your USERNAME}\.conda\envs\eggtray\Lib\sites-packages\torch\array.py
-```
-def __array__(self, dtype=None):
-	if dtype is None:
-		return self.cpu().numpy()
-	else:
-		return self.numpy().as type(dtype, copy=False)
-```
 ## Arguments
 ### Socket
 Disable-socket

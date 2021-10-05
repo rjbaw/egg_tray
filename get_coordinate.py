@@ -15,6 +15,7 @@ from scipy import spatial
 from scipy.spatial.transform import Rotation
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
+import copy
 
 class Detect(object):
     def __init__(self, opt):
@@ -38,17 +39,16 @@ class Detect(object):
         self.vid_writer = None
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.fps = 0
-        self.session = 0
         self.robot = 'KUKA'
-
         #new model
         self.cartesian_xcoor = 0.0115 
         self.cartesian_ycoor = 0.075 
-
         #old model
         #self.cartesian_xcoor = 0.017 
         #self.cartesian_ycoor = 0.0096 
-
+        self.old = None
+        self.session = 0
+        self.damper = 1.0
         self.load_camera_parameters(opt.camera_params)
         if self.use_socket:
             self.socket_connection(opt.test_socket)
@@ -67,6 +67,9 @@ class Detect(object):
             print('CAMERA PARAMETERS LOADED')
 
     def socket_connection(self, test):
+        self.session = 0
+        self.damper = 1.0
+        self.old = None
         if test:
             PORT = 8080
             IP = '127.0.0.1'
@@ -106,7 +109,6 @@ class Detect(object):
             return self.read_robot_data(robot_data)
 
     def read_robot_data(self, robot_data):
-        self.session = 0
         if self.robot == 'ABB':
             if self.debug:
                 print('ABB ROBOT')
@@ -261,9 +263,11 @@ class Detect(object):
                                               30, (w, h))
         self.vid_writer.write(self.im0)
 
-    def save_to_out(self, mode, vid_cap):
+    def save_to_out(self, mode, vid_cap, ori_img):
+        self.save_path = os.path.join(self.out, str(self.session) + '.jpg')
         #cv2.imwrite(self.save_path, self.im0)
-        self.save_video(vid_cap)
+        cv2.imwrite(self.save_path, ori_img)
+        #self.save_video(vid_cap)
 
     def get_xyedge_pos(self, g_rects):
         if len(g_rects) == 1:
@@ -355,21 +359,17 @@ class Detect(object):
     def transform_robot_base(self, rect):
         if rect.ndim != 1:
             return self.transform_robot_base(np.squeeze(rect))
-#        coor = np.asarray([-rect[1], -rect[0], -rect[2]])
-#        coor = np.asarray([rect[2], -rect[0], -rect[1]])
         coor = np.asarray([0, -rect[0], -rect[1]])
+        #coor = np.asarray([0, -rect[0], rect[1]])
         if self.debug:
             print('TRANSLATION VECTOR RELATIVE TO ROBOT: \n', coor)
-#        refp = [-0.139, 0.02046, -0.5125]
         refp = [0, 0, 0]
-        damper = 0.9**self.session
-        coor = np.asarray([refp[0] * np.sign(coor[0]) + damper * np.sign(coor[0]) * (abs(coor[0]) - refp[0]),
-                           refp[1] * np.sign(coor[1]) + damper * np.sign(coor[1]) * (abs(coor[1]) - refp[1]),
-                           refp[2] * np.sign(coor[2]) + damper * np.sign(coor[2]) * (abs(coor[2]) - refp[2])])
+        scale_factor = self.damper
+        coor = np.asarray([refp[0] * np.sign(coor[0]) + scale_factor * np.sign(coor[0]) * (abs(coor[0]) - refp[0]),
+                           refp[1] * np.sign(coor[1]) + scale_factor * np.sign(coor[1]) * (abs(coor[1]) - refp[1]),
+                           refp[2] * np.sign(coor[2]) + scale_factor * np.sign(coor[2]) * (abs(coor[2]) - refp[2])])
         if self.debug:
             print('SCALED TRANSLATION VECTOR RELATIVE TO ROBOT: \n', coor)
-        #if (abs(coor[1]) + abs(coor[2])) < 0.003:
-        #    coor = np.zeros(3)
         return coor
 
     def send2robot(self, a_tvec, euler_angles):
@@ -393,19 +393,17 @@ class Detect(object):
             t = time.time()
             if self.webcam:
                 p, self.im0 = path[0], im0s[0]
+                ori_img = copy.deepcopy(self.im0)
             else:
                 p, self.im0 = path, im0s
-            self.save_path = str(Path(self.out) / Path(p).name)
             self.height, self.width = self.im0.shape[:2]
 
             if self.undistort:
                 newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.camera_matrix, self.dist_coefs, (self.width, self.height), 1, (self.width, self.height))
                 for i in range(len(im0s)):
                     im0s[i] = cv2.undistort(im0s[i], self.camera_matrix, self.dist_coefs, None, newcameramtx)
-
             img = self.yolov3_transform(im0s, device)
             g_rects = self.detect(img, model, colors)
-
             if self.view_img:
                 self.put_status_bar()
                 cv2.imshow(p, self.im0)
@@ -414,7 +412,7 @@ class Detect(object):
             if self.save_img:
                 if dataset.mode != 'images':
                     self.put_status_bar()
-                self.save_to_out(dataset.mode, vid_cap)
+                self.save_to_out(dataset.mode, vid_cap, ori_img)
             if len(g_rects) != 0:
                 max_rect = self.get_xyedge_pos(g_rects)
                 rvec, tvec = self.transform_pnp(max_rect)
@@ -422,10 +420,15 @@ class Detect(object):
                 a_tvec = self.transform_robot_base(tvec)
                 if not ( (-0.1 < a_tvec[1] < 0.1) and (-0.1 < a_tvec[2] < 0.1) ):
                     continue
+                if self.session > 4:
+                    if self.old is None:
+                        self.old = np.sum(np.abs(np.around(a_tvec).astype(int)))
+                    elif self.old<=np.sum(np.abs(np.around(a_tvec).astype(int))):
+                        self.damper *= 0.9
+                        continue
                 if self.use_socket:
+                    self.session += 1
                     self.send2robot(a_tvec, euler_angles)
-                    #if self.conf_thres < 0.7:
-                    #    self.conf_thres += 0.1
                     self.socket_recieve()
             if self.fps == 0:
                 self.fps = 1/(time.time() - t)
@@ -441,7 +444,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp-1cls.cfg', help='cfg file path')
     parser.add_argument('--data', type=str, default='data/egg_tray.data', help='data file path')
-    parser.add_argument('--weights', type=str, default='weights/bestegg_tray_precision3.pt', help='path to weights file')
+    parser.add_argument('--weights', type=str, default='weights/egg_tray.pt', help='path to weights file')
     parser.add_argument('--source', type=str, default='0', help='source')  # input file/folder, 0 for webcam
     parser.add_argument('--camera-params', type=str, default='camera_data.npy', help='intrinsic camera parameters path')
     parser.add_argument('--output', type=str, default='output', help='output folder')  # output folder
