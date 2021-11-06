@@ -420,12 +420,13 @@ class Detect(object):
                 a_tvec = self.transform_robot_base(tvec)
                 if not ( (-0.1 < a_tvec[1] < 0.1) and (-0.1 < a_tvec[2] < 0.1) ):
                     continue
-                if self.session > 4:
-                    if self.old is None:
-                        self.old = np.sum(np.abs(np.around(a_tvec).astype(int)))
-                    elif self.old<=np.sum(np.abs(np.around(a_tvec).astype(int))):
+                if self.old is None:
+                    self.old = np.sum(np.abs(tvec))
+                elif self.old<=np.sum(np.abs(a_tvec)):
+                    self.old = np.sum(np.abs(a_tvec))
+                    if self.session > 4:
                         self.damper *= 0.9
-                        continue
+                    continue
                 if self.use_socket:
                     self.session += 1
                     self.send2robot(a_tvec, euler_angles)
